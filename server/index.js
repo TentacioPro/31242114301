@@ -1,44 +1,34 @@
 const http = require('http');
+const https = require('https');
 const url = require('url');
 
 const server = http.createServer((req,res) => {
 
     const parsedUrl = url.parse(req.url, true);
     const pathname = parsedUrl.pathname;
+    
+    if(pathname.startsWith('test/companies/')) {
+        const companyName = parsedUrl.pathname.split('/')[3];
+        const categoryName = parsedUrl.pathname.split('/')[5];
+        const topN = parseInt(parsedUrl.query['top-n']);
+        const minPrice = parseInt(parsedUrl.query['minPrice']);
+        const maxPrice = parseInt(parsedUrl.query['maxPrice']);
 
-    if(pathname === '/categories/:categoryName/products') {
-        const categoryName = parsedUrl.searchParams.categoryName;
-        const n = parsedUrl.query.n;
-        const page = parsedUrl.query.page;
-        const sort = parsedUrl.query.sort;
 
-        const companies = [
-            {name: 'Company A', api:''},
-            {name: 'Company B', api:''},
-            {name: 'Company A', api:''},
-            {name: 'Company A', api:''},
-            {name: 'Company A', api:''},
-        ];
+        if(!companyName || !categoryName || !topN || !minPrice || !maxPrice ) {
+            res.writeHead(400, {'Content-Type' : 'application/json'});
+            res.end(JSON.stringify({error: 'Invalid request'}));
+            return;
+        }
 
-        const promises = company.map(company => {
-            const api = company.api;
-            const params = {categoryName, priceRange:''};
-            return makeApiCall(api,params);
-        });
+        if(!isValidCompany(companyName)|| !isValidCategory(categoryName)){
+            res.writeHead(400, {'Content-Type':'application/json'});
+            res.end(JSON.stringify({error : 'Invalid Company or Category'}));
+            return;
+        }
 
-        Promise.all(promises).then(responses => {
-            const products = responses.flatMap(response => response.data);
-
-            const topNProducts = products,slice(0, n);
-            res.writeHead(200,{'Content-Type': 'application/json'});
-            res.end(JSON.stringify(topNProfucts));
-        }).catch(error => {
-            console.error(error);
-            res.writeHead(500,{'Content-Type': 'application/json'});
-            res.end(JSON.stringify({error: 'Internal Server Error'}));
-        });
-    }  else if (pathname === '/categories/:categoryName/products/:productId') {
-        const categoryName = parsedUrl.params.categoryName;
-        const productId = parsedUrl.params.productId;
+        const companyApi = getCompanyApi(companyName);
+        const params = { categoryName, minPrice, maxPrice};
+        makeApiCall(companyApi, params).then(response => {});
     }
 });
